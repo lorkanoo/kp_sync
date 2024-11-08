@@ -1,0 +1,36 @@
+[package]
+name = "kp_sync"
+version = "0.9.0"
+authors = ["lorkanoo"]
+edition = "2021"
+description = "Kill proof synchronizer"
+repository = "https://github.com/lorkanoo/kp_sync"
+rust-version = "1.76.0"
+
+[dependencies]
+log = { version = "0.4.22"}
+reqwest = { version = "0.12.8", features = ["blocking", "rustls-tls"] }
+serde = { version = "1.0.163", features = ["derive"] }
+serde_json = "1.0.132"
+windows = { version = "0.58.0", features = [
+    "Win32_Media",
+] }
+regex = "1.11.1"
+function_name = "0.3.0"
+nexus = { git = "https://github.com/zerthox/nexus-rs", features = ["log", "mumble_json"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+
+[build-dependencies]
+winresource = "0.1.17"
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.winresource]
+ProductName = "kp_sync"
+OriginalFilename = "kp_sync.dll"
+
+[profile.release]
+lto = "thin"
+debug = "limited"
+split-debuginfo = "packed"
