@@ -12,8 +12,6 @@ const ERROR_COLOR: [f32; 4] = [0.4, 0.4, 0.4, 1.0];
 impl Addon {
     #[named]
     pub fn render_options(&mut self, ui: &Ui) {
-        log::debug!("[{}] Current addon data: {:?}", function_name!(), self);
-
         self.render_status_table(ui);
         separate_with_spacing(ui);
         ui.input_text("Kill proof id / account name", &mut self.config.kp_id)
