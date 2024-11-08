@@ -1,5 +1,3 @@
-#![feature(duration_constructors)]
-
 mod addon;
 mod config;
 mod context;

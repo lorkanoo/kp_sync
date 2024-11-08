@@ -71,7 +71,7 @@ pub fn config_dir() -> PathBuf {
 }
 
 fn default_retry_frequency() -> Duration {
-    Duration::from_mins(5)
+    Duration::new(5 * 60, 0)
 }
 
 fn default_kp_map_ids() -> Vec<u32> {
