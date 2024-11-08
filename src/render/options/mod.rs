@@ -4,13 +4,11 @@ use crate::kp::api::{FailureReason, KpResponse};
 use crate::kp::refresh;
 use crate::render::{separate_with_spacing, table_rows};
 use chrono::Local;
-use function_name::named;
 use nexus::imgui::Ui;
 use std::fmt;
 
 const ERROR_COLOR: [f32; 4] = [0.4, 0.4, 0.4, 1.0];
 impl Addon {
-    #[named]
     pub fn render_options(&mut self, ui: &Ui) {
         self.render_status_table(ui);
         separate_with_spacing(ui);
