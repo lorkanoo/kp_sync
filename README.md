@@ -18,3 +18,6 @@ Kill proof synchronizer for Nexus.
 
 ## Roadmap
 - Automatically get account name from arcdps event if not configured and arcdps is installed.
+
+## Credits
+- to [Zerthox](https://github.com/zerthox), for nexus and mumble rust bindings and providing excellent example on how to use them in gw2-reffect addon.
