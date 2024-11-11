@@ -13,10 +13,13 @@ pub mod api;
 pub fn refresh(addon: &mut Addon) {
     log::info!("[{}] started", function_name!());
     if matches!(addon.context.kp_response, Pending) {
-        log::warn!("[{}] refresh is already in progress", function_name!())
+        log::warn!("[{}] refresh is already in progress", function_name!());
+    } else if !addon.config.valid() {
+        log::warn!("[{}] addon configuration is not valid", function_name!());
+    } else {
+        addon.context.kp_response = Pending;
+        refresh_thread();
     }
-    addon.context.kp_response = Pending;
-    refresh_thread();
 }
 
 #[named]
@@ -24,22 +27,23 @@ fn refresh_thread() {
     thread::spawn(|| {
         log::debug!("[{}] started", function_name!());
         let kp_id = Addon::lock().config.kp_id.clone();
-        let retry_frequency = Addon::lock().config.retry_frequency;
 
         let kp_response = refresh_kill_proof(kp_id);
         match kp_response {
             KpResponse::Success => {
                 Addon::lock().config.last_refresh_date = Some(Local::now());
+                Addon::lock().context.scheduled_refresh = None;
             }
-            KpResponse::Failure(FailureReason::RefreshCooldown) => {
+            KpResponse::Failure(FailureReason::RefreshCooldown(_duration)) => {
                 Addon::lock().context.scheduled_refresh =
-                    Some(ScheduledRefresh::OnTime(Local::now().add(retry_frequency)));
+                    Some(ScheduledRefresh::OnTime(Local::now().add(_duration)));
                 log::debug!(
-                    "[{}] Failed to refresh, retrying in {:?}",
+                    "[{}] Failed to refresh, retrying in {:?}s",
                     function_name!(),
-                    retry_frequency
+                    _duration.as_secs()
                 );
             }
+            KpResponse::InvalidId(_) => Addon::lock().context.scheduled_refresh = None,
             _ => {}
         }
 

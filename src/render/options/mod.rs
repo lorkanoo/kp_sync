@@ -15,7 +15,13 @@ impl Addon {
         ui.input_text("Kill proof id / account name", &mut self.config.kp_id)
             .build();
         self.error_text(ui);
-        if ui.button("Refresh") {
+        let show_refresh_button = self.config.valid()
+            && match &self.context.kp_response {
+                KpResponse::InvalidId(invalid_id) => invalid_id != &self.config.kp_id,
+                _ => true,
+            };
+
+        if show_refresh_button && ui.button("Refresh") {
             refresh(self);
         }
     }
@@ -27,7 +33,14 @@ impl Addon {
                 "Enter valid id, for example: \"xAd8\" or \"jennah.1234\" ",
             );
         } else {
-            ui.text("");
+            match &self.context.kp_response {
+                KpResponse::InvalidId(invalid_id) => {
+                    if invalid_id.eq(&self.config.kp_id) {
+                        ui.text_colored(ERROR_COLOR, "KP Id not found. Enter different value.");
+                    }
+                }
+                _ => {}
+            }
         }
     }
 
@@ -55,7 +68,7 @@ impl Addon {
         if self.config.valid() {
             self.context.kp_response.to_string()
         } else {
-            "invalid configuration".to_string()
+            "invalid config (KP id format invalid)".to_string()
         }
     }
 
@@ -70,7 +83,7 @@ impl Addon {
         self.context
             .scheduled_refresh
             .as_ref()
-            .map_or_else(|| "unavailable".to_string(), |refresh| refresh.to_string())
+            .map_or_else(|| "not planned".to_string(), |refresh| refresh.to_string())
     }
 }
 
@@ -80,10 +93,20 @@ impl fmt::Display for ScheduledRefresh {
             ScheduledRefresh::OnKPMapExit => write!(f, "On raid/strike exit"),
             ScheduledRefresh::OnTime(time) => {
                 let delta = time.signed_duration_since(Local::now());
-                if delta.num_seconds() > 0 {
-                    write!(f, "in {}s", delta.num_seconds())
+                if delta.num_minutes() > 0 {
+                    write!(f, "in {} minutes", delta.num_minutes() + 1)
                 } else {
-                    write!(f, "starts soon..")
+                    let seconds = delta.num_seconds();
+                    if seconds > 0 {
+                        write!(
+                            f,
+                            "in {} second{}",
+                            seconds,
+                            if seconds > 1 { "s" } else { "" }
+                        )
+                    } else {
+                        write!(f, "starts soon..")
+                    }
                 }
             }
         }
@@ -97,6 +120,9 @@ impl fmt::Display for KpResponse {
             KpResponse::Unavailable => write!(f, "not refreshed recently"),
             KpResponse::Success => write!(f, "refresh successful"),
             KpResponse::Failure(reason) => write!(f, "failed ({})", reason),
+            KpResponse::InvalidId(kp_id) => {
+                write!(f, "invalid config (KP id \"{}\" not found)", kp_id)
+            }
         }
     }
 }
@@ -106,8 +132,8 @@ impl fmt::Display for FailureReason {
         match self {
             FailureReason::NotFound => write!(f, "not found"),
             FailureReason::NotAccessible => write!(f, "not accessible"),
-            FailureReason::RefreshCooldown => write!(f, "refreshed too recently"),
-            FailureReason::Unknown => write!(f, "unknown error"),
+            FailureReason::RefreshCooldown(_) => write!(f, "refreshed too recently"),
+            FailureReason::Unknown => write!(f, "unknown error occurred"),
         }
     }
 }

@@ -9,8 +9,8 @@ use std::sync::{Mutex, MutexGuard, OnceLock};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 static ADDON: OnceLock<Mutex<Addon>> = OnceLock::new();
 
-//todo: redirect issue on invalid kp id
-//todo: add alter text for inputs
+//todo: notification text on refresh
+//todo: certificate from file
 
 #[derive(Debug)]
 pub struct Addon {

@@ -5,20 +5,17 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
-use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub kp_id: String,
     pub last_refresh_date: Option<DateTime<Local>>,
     pub refresh_on_next_load: bool,
-    #[serde(default = "default_retry_frequency")]
-    pub retry_frequency: Duration,
     #[serde(default = "default_kp_map_ids")]
     pub kp_map_ids: Vec<u32>,
 }
 
-const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{4}|[a-zA-Z0-9]+\.[0-9]{4})$";
+const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9]+\.[0-9]{4})$";
 
 impl Config {
     pub fn default() -> Self {
@@ -26,7 +23,6 @@ impl Config {
             kp_id: "".to_string(),
             last_refresh_date: None,
             refresh_on_next_load: false,
-            retry_frequency: default_retry_frequency(),
             kp_map_ids: default_kp_map_ids(),
         }
     }
@@ -68,10 +64,6 @@ impl Config {
 
 pub fn config_dir() -> PathBuf {
     get_addon_dir("kp_sync").expect("invalid config directory")
-}
-
-fn default_retry_frequency() -> Duration {
-    Duration::new(5 * 60, 0)
 }
 
 fn default_kp_map_ids() -> Vec<u32> {
