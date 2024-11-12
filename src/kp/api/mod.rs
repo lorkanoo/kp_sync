@@ -63,7 +63,7 @@ pub fn refresh_kill_proof(kp_id: String) -> KpResponse {
 
 #[named]
 fn cooldown_response(kp_id: &String) -> KpResponse {
-    match get_sync(cooldown_path(&kp_id)) {
+    match get_sync(cooldown_path(kp_id)) {
         Ok(response) => match response.text() {
             Ok(html) => match extract_duration(html) {
                 Some(duration) => KpResponse::Failure(FailureReason::RefreshCooldown(duration)),

@@ -33,13 +33,10 @@ impl Addon {
                 "Enter valid id, for example: \"xAd8\" or \"jennah.1234\" ",
             );
         } else {
-            match &self.context.kp_response {
-                KpResponse::InvalidId(invalid_id) => {
-                    if invalid_id.eq(&self.config.kp_id) {
-                        ui.text_colored(ERROR_COLOR, "KP Id not found. Enter different value.");
-                    }
+            if let KpResponse::InvalidId(invalid_id) = &self.context.kp_response {
+                if invalid_id.eq(&self.config.kp_id) {
+                    ui.text_colored(ERROR_COLOR, "KP Id not found. Enter different value.");
                 }
-                _ => {}
             }
         }
     }
