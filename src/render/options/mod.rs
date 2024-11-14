@@ -123,33 +123,30 @@ impl Addon {
         if self.context.show_linked_ids_err {
             ui.text_colored(ERROR_COLOR, "Linked accounts not found");
         } else {
-            match &self.config.kp_identifiers.linked_ids {
-                Some(ids) => {
-                    if ids.is_empty() {
-                        ui.text("Loading..");
-                    } else {
-                        ui.text("Linked accounts:");
-                        for id in ids {
-                            ui.text(format!("- {}", id));
-                        }
+            if let Some(ids) = &self.config.kp_identifiers.linked_ids {
+                if ids.is_empty() {
+                    ui.text("Loading..");
+                } else {
+                    ui.text("Linked accounts:");
+                    for id in ids {
+                        ui.text(format!("- {}", id));
                     }
-                    if self.context.refresh_in_progress {
-                        ui.text("Loading..");
-                    } else {
-                        for response in &self.context.linked_kp_responses {
-                            let kp_id = &response.0;
-                            let kp_response = &response.1;
-                            match kp_response {
-                                KpResponse::Success => {}
-                                _ => ui.text_colored(
-                                    ERROR_COLOR,
-                                    format!("Could not refresh {}: {}", kp_id, kp_response),
-                                ),
-                            }
+                }
+                if self.context.refresh_in_progress {
+                    ui.text("Loading..");
+                } else {
+                    for response in &self.context.linked_kp_responses {
+                        let kp_id = &response.0;
+                        let kp_response = &response.1;
+                        match kp_response {
+                            KpResponse::Success => {}
+                            _ => ui.text_colored(
+                                ERROR_COLOR,
+                                format!("Could not refresh {}: {}", kp_id, kp_response),
+                            ),
                         }
                     }
                 }
-                None => {}
             }
         }
     }
