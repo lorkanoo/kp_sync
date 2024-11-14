@@ -1,42 +1,78 @@
 use crate::addon::Addon;
-use crate::context::ScheduledRefresh;
-use crate::kp::api::{FailureReason, KpResponse};
-use crate::kp::refresh;
+use crate::kp::api::kp_response::KpResponse;
+use crate::kp::{fetch_linked_ids_thread, refresh_kp_thread};
 use crate::render::{separate_with_spacing, table_rows};
-use chrono::Local;
 use nexus::imgui::Ui;
-use std::fmt;
 
 const ERROR_COLOR: [f32; 4] = [0.4, 0.4, 0.4, 1.0];
 impl Addon {
     pub fn render_options(&mut self, ui: &Ui) {
         self.render_status_table(ui);
         separate_with_spacing(ui);
-        ui.input_text("Kill proof id / account name", &mut self.config.kp_id)
-            .build();
-        self.error_text(ui);
-        let show_refresh_button = self.config.valid()
-            && match &self.context.kp_response {
-                KpResponse::InvalidId(invalid_id) => invalid_id != &self.config.kp_id,
-                _ => true,
-            };
+        ui.input_text(
+            "Kill proof id / account name",
+            &mut self.config.kp_identifiers.main_id,
+        )
+        .build();
 
-        if show_refresh_button && ui.button("Refresh") {
-            refresh(self);
+        if self.kp_id_changed() {
+            self.on_kp_id_change();
+            self.context.previous_main_id = self.config.kp_identifiers.main_id.clone();
         }
-    }
 
-    fn error_text(&mut self, ui: &Ui) {
-        if !self.config.valid() {
+        if self.config.valid() {
+            if self.context_valid() {
+                self.render_on_valid_state(ui);
+            }
+        } else if let KpResponse::InvalidId(invalid_id) = &self.context.main_kp_response {
+            if invalid_id.eq(&self.config.kp_identifiers.main_id) {
+                ui.text_colored(ERROR_COLOR, "KP Id not found. Enter different value.");
+            }
+        } else {
             ui.text_colored(
                 ERROR_COLOR,
                 "Enter valid id, for example: \"xAd8\" or \"jennah.1234\" ",
             );
-        } else if let KpResponse::InvalidId(invalid_id) = &self.context.kp_response {
-            if invalid_id.eq(&self.config.kp_id) {
-                ui.text_colored(ERROR_COLOR, "KP Id not found. Enter different value.");
-            }
         }
+    }
+
+    fn kp_id_changed(&mut self) -> bool {
+        self.config.kp_identifiers.main_id != self.context.previous_main_id
+    }
+
+    fn context_valid(&mut self) -> bool {
+        match &self.context.main_kp_response {
+            KpResponse::InvalidId(invalid_id) => invalid_id != &self.config.kp_identifiers.main_id,
+            _ => true,
+        }
+    }
+
+    fn on_kp_id_change(&mut self) {
+        self.config.kp_identifiers.linked_ids = None;
+        self.config.last_refresh_date = None;
+        self.context.show_linked_ids_err = false;
+        self.context.scheduled_refresh = None;
+        self.context.linked_kp_responses.clear();
+    }
+
+    fn render_on_valid_state(&mut self, ui: &Ui) {
+        if ui.button("Refresh") {
+            refresh_kp_thread();
+        }
+        let mut checkbox_checked = self.config.kp_identifiers.linked_ids.is_some();
+        ui.checkbox("Refresh linked accounts", &mut checkbox_checked);
+
+        if checkbox_checked {
+            if self.config.kp_identifiers.linked_ids.is_none() {
+                self.context.show_linked_ids_err = false;
+                self.config.kp_identifiers.linked_ids = Some(Vec::new());
+                fetch_linked_ids_thread();
+            }
+        } else {
+            self.config.kp_identifiers.linked_ids = None;
+            self.context.linked_kp_responses.clear();
+        }
+        self.render_linked_ids(ui);
     }
 
     fn render_status_table(&mut self, ui: &Ui) {
@@ -60,8 +96,10 @@ impl Addon {
     }
 
     fn current_status_text(&mut self) -> String {
-        if self.config.valid() {
-            self.context.kp_response.to_string()
+        if self.context.refresh_in_progress {
+            "refresh is in progress..".to_string()
+        } else if self.config.valid() {
+            self.context.main_kp_response.to_string()
         } else {
             "invalid config (KP id format invalid)".to_string()
         }
@@ -80,55 +118,39 @@ impl Addon {
             .as_ref()
             .map_or_else(|| "not planned".to_string(), |refresh| refresh.to_string())
     }
-}
 
-impl fmt::Display for ScheduledRefresh {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ScheduledRefresh::OnKPMapExit => write!(f, "On raid/strike exit"),
-            ScheduledRefresh::OnTime(time) => {
-                let delta = time.signed_duration_since(Local::now());
-                if delta.num_minutes() > 0 {
-                    write!(f, "in {} minutes", delta.num_minutes() + 1)
-                } else {
-                    let seconds = delta.num_seconds();
-                    if seconds > 0 {
-                        write!(
-                            f,
-                            "in {} second{}",
-                            seconds,
-                            if seconds > 1 { "s" } else { "" }
-                        )
+    fn render_linked_ids(&mut self, ui: &Ui) {
+        if self.context.show_linked_ids_err {
+            ui.text_colored(ERROR_COLOR, "Linked accounts not found");
+        } else {
+            match &self.config.kp_identifiers.linked_ids {
+                Some(ids) => {
+                    if ids.is_empty() {
+                        ui.text("Loading..");
                     } else {
-                        write!(f, "starts soon..")
+                        ui.text("Linked accounts:");
+                        for id in ids {
+                            ui.text(format!("- {}", id));
+                        }
+                    }
+                    if self.context.refresh_in_progress {
+                        ui.text("Loading..");
+                    } else {
+                        for response in &self.context.linked_kp_responses {
+                            let kp_id = &response.0;
+                            let kp_response = &response.1;
+                            match kp_response {
+                                KpResponse::Success => {}
+                                _ => ui.text_colored(
+                                    ERROR_COLOR,
+                                    format!("Could not refresh {}: {}", kp_id, kp_response),
+                                ),
+                            }
+                        }
                     }
                 }
+                None => {}
             }
-        }
-    }
-}
-
-impl fmt::Display for KpResponse {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            KpResponse::Pending => write!(f, "refresh is in progress.."),
-            KpResponse::Unavailable => write!(f, "not refreshed recently"),
-            KpResponse::Success => write!(f, "refresh successful"),
-            KpResponse::Failure(reason) => write!(f, "failed ({})", reason),
-            KpResponse::InvalidId(kp_id) => {
-                write!(f, "invalid config (KP id \"{}\" not found)", kp_id)
-            }
-        }
-    }
-}
-
-impl fmt::Display for FailureReason {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            FailureReason::NotFound => write!(f, "not found"),
-            FailureReason::NotAccessible => write!(f, "not accessible"),
-            FailureReason::RefreshCooldown(_) => write!(f, "refreshed too recently"),
-            FailureReason::Unknown => write!(f, "unknown error occurred"),
         }
     }
 }

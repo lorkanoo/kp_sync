@@ -1,4 +1,8 @@
+mod killproof_identifiers;
+
+use crate::config::killproof_identifiers::KillproofIdentifiers;
 use chrono::{DateTime, Local};
+use log::info;
 use nexus::paths::get_addon_dir;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -8,7 +12,7 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub kp_id: String,
+    pub kp_identifiers: KillproofIdentifiers,
     pub last_refresh_date: Option<DateTime<Local>>,
     pub refresh_on_next_load: bool,
     #[serde(default = "default_kp_map_ids")]
@@ -20,7 +24,7 @@ const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9]+\.[0-9]{4})$";
 impl Config {
     pub fn default() -> Self {
         Self {
-            kp_id: "".to_string(),
+            kp_identifiers: KillproofIdentifiers::default(),
             last_refresh_date: None,
             refresh_on_next_load: false,
             kp_map_ids: default_kp_map_ids(),
@@ -36,7 +40,7 @@ impl Config {
         let config = serde_json::from_reader(reader)
             .inspect_err(|err| log::warn!("Failed to parse config: {err}"))
             .ok()?;
-        log::info!("Loaded config from \"{}\"", path.display());
+        info!("Loaded config from \"{}\"", path.display());
         Some(config)
     }
 
@@ -46,7 +50,7 @@ impl Config {
             Ok(file) => {
                 let writer = BufWriter::new(file);
                 serde_json::to_writer_pretty(writer, &self).expect("failed to serialize config");
-                log::info!("Saved config to \"{}\"", path.display())
+                info!("Saved config to \"{}\"", path.display())
             }
             Err(err) => log::error!("Failed to save config: {err}"),
         }
@@ -58,7 +62,7 @@ impl Config {
 
     pub fn valid(&self) -> bool {
         let re = Regex::new(REGEX_KP_ID).unwrap();
-        re.is_match(self.kp_id.as_str())
+        re.is_match(self.kp_identifiers.main_id.as_str())
     }
 }
 

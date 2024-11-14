@@ -1,16 +1,24 @@
 use crate::config::{config_dir, Config};
 use crate::context::Context;
-use crate::kp::refresh;
+use crate::kp::refresh_kp_thread;
+use crate::thread::background_thread;
 use function_name::named;
+use log::info;
 use nexus::gui::{register_render, RenderType};
 use std::fs;
 use std::sync::{Mutex, MutexGuard, OnceLock};
+use std::thread::JoinHandle;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-static ADDON: OnceLock<Mutex<Addon>> = OnceLock::new();
+static MULTITHREADED_ADDON: MultithreadedAddon = MultithreadedAddon {
+    addon: OnceLock::new(),
+    threads: OnceLock::new(),
+};
 
-//todo: notification text on refresh
-//todo: certificate from file
+pub struct MultithreadedAddon {
+    pub addon: OnceLock<Mutex<Addon>>,
+    pub threads: OnceLock<Mutex<Vec<JoinHandle<()>>>>,
+}
 
 #[derive(Debug)]
 pub struct Addon {
@@ -26,15 +34,24 @@ impl Addon {
         }
     }
     pub fn lock() -> MutexGuard<'static, Addon> {
-        ADDON
+        MULTITHREADED_ADDON
+            .addon
             .get_or_init(|| Mutex::new(Addon::new()))
+            .lock()
+            .unwrap()
+    }
+
+    pub fn threads() -> MutexGuard<'static, Vec<JoinHandle<()>>> {
+        MULTITHREADED_ADDON
+            .threads
+            .get_or_init(|| Mutex::new(Vec::new()))
             .lock()
             .unwrap()
     }
 
     #[named]
     pub fn load() {
-        log::info!("[{}] Loading kp_sync v{}", function_name!(), VERSION);
+        info!("[{}] Loading kp_sync v{}", function_name!(), VERSION);
         let _ = fs::create_dir(config_dir());
         {
             if let Some(config) = Config::try_load() {
@@ -42,13 +59,9 @@ impl Addon {
             }
         }
 
+        init_context(&mut Addon::lock());
         refresh_on_load(&mut Addon::lock());
-
-        register_render(
-            RenderType::Render,
-            nexus::gui::render!(|ui| Addon::lock().render_main(ui)),
-        )
-        .revert_on_unload();
+        background_thread();
 
         register_render(
             RenderType::OptionsRender,
@@ -56,25 +69,38 @@ impl Addon {
         )
         .revert_on_unload();
 
-        log::info!("[{}] kp_sync loaded", function_name!());
+        info!("[{}] kp_sync loaded", function_name!());
     }
-
     #[named]
     pub fn unload() {
-        log::info!("[{}] Unloading kp_sync v{VERSION}", function_name!());
+        info!("[{}] Unloading kp_sync v{VERSION}", function_name!());
+        Self::lock().context.run_background_thread = false;
+        let mut threads = Self::threads();
+        while let Some(thread) = threads.pop() {
+            info!("[{}] Waiting for a thread to end..", function_name!());
+            match thread.join() {
+                Ok(_) => info!("[{}] Thread unloaded successfully", function_name!()),
+                Err(_) => log::error!("[{}] Thread unloaded with error", function_name!()),
+            }
+        }
         let addon = &mut Self::lock();
         if addon.context.scheduled_refresh.is_some() {
-            log::info!("[{}] refresh_on_next_load scheduled", function_name!());
+            info!("[{}] refresh_on_next_load scheduled", function_name!());
             addon.config.refresh_on_next_load = true;
         }
+        info!("[{}] Saving configuration..", function_name!());
         addon.config.save();
-        log::info!("[{}] kp_sync unloaded", function_name!());
+        info!("[{}] kp_sync unloaded", function_name!());
     }
 }
 
 fn refresh_on_load(addon: &mut MutexGuard<Addon>) {
     if addon.config.refresh_on_next_load {
         addon.config.refresh_on_next_load = false;
-        refresh(addon);
+        refresh_kp_thread();
     }
+}
+
+fn init_context(addon: &mut MutexGuard<Addon>) {
+    addon.context.previous_main_id = addon.config.kp_identifiers.main_id.clone();
 }

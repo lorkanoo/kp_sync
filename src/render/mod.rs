@@ -1,6 +1,5 @@
 use nexus::imgui::Ui;
 
-pub mod main;
 pub mod options;
 
 fn separate_with_spacing(ui: &Ui) {

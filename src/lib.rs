@@ -3,6 +3,7 @@ mod config;
 mod context;
 mod kp;
 mod render;
+mod thread;
 
 use crate::addon::Addon;
 use nexus::{AddonFlags, UpdateProvider};
