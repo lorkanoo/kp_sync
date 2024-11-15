@@ -1,5 +1,6 @@
 mod killproof_identifiers;
 
+use crate::addon::VERSION;
 use crate::config::killproof_identifiers::KillproofIdentifiers;
 use chrono::{DateTime, Local};
 use log::info;
@@ -12,11 +13,15 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
+    #[serde(default = "default_version")]
+    pub version: String,
     pub kp_identifiers: KillproofIdentifiers,
     pub last_refresh_date: Option<DateTime<Local>>,
     pub refresh_on_next_load: bool,
     #[serde(default = "default_kp_map_ids")]
     pub kp_map_ids: Vec<u32>,
+    #[serde(default = "default_retain_refresh_map_ids")]
+    pub retain_refresh_map_ids: Vec<u32>,
 }
 
 const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9]+\.[0-9]{4})$";
@@ -24,10 +29,12 @@ const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9]+\.[0-9]{4})$";
 impl Config {
     pub fn default() -> Self {
         Self {
+            version: VERSION.to_string(),
             kp_identifiers: KillproofIdentifiers::default(),
             last_refresh_date: None,
             refresh_on_next_load: false,
             kp_map_ids: default_kp_map_ids(),
+            retain_refresh_map_ids: default_retain_refresh_map_ids(),
         }
     }
 
@@ -70,9 +77,19 @@ pub fn config_dir() -> PathBuf {
     get_addon_dir("kp_sync").expect("invalid config directory")
 }
 
+fn default_version() -> String {
+    VERSION.to_string()
+}
+
 fn default_kp_map_ids() -> Vec<u32> {
     vec![
         1339, 1351, 1432, 1450, 1451, 1437, 1485, 1515, 1520, // strikes
         1062, 1149, 1156, 1188, 1264, 1303, 1323, // raids
+    ]
+}
+
+fn default_retain_refresh_map_ids() -> Vec<u32> {
+    vec![
+        1155, 1370, 1509, 1428, // hubs
     ]
 }

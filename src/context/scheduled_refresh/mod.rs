@@ -3,14 +3,14 @@ use std::fmt;
 
 #[derive(Clone, Debug)]
 pub enum ScheduledRefresh {
-    OnKPMapExit,
+    OnNormalMapEnter,
     OnTime(DateTime<Local>),
 }
 
 impl fmt::Display for ScheduledRefresh {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ScheduledRefresh::OnKPMapExit => write!(f, "On raid/strike exit"),
+            ScheduledRefresh::OnNormalMapEnter => write!(f, "on normal map enter"),
             ScheduledRefresh::OnTime(time) => {
                 let delta = time.signed_duration_since(Local::now());
                 if delta.num_minutes() > 0 {

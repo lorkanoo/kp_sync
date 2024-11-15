@@ -14,11 +14,31 @@ pub fn background_thread() {
         }
 
         clean_finished_threads();
-        schedule_on_map_exit();
+        refresh_on_load();
+        schedule_on_map_enter();
         refresh_on_schedule();
 
         thread::sleep(Duration::from_millis(500));
     }));
+}
+
+#[named]
+fn refresh_on_load() {
+    let mut addon = Addon::lock();
+    if let Some(m) = addon.context.mumble {
+        let current_map_id = &m.read_map_id();
+        if addon.config.refresh_on_next_load && current_map_id != &0 {
+            info!("[{}] refreshing / scheduling refresh", function_name!());
+            if addon.config.kp_map_ids.contains(current_map_id)
+                || addon.config.retain_refresh_map_ids.contains(current_map_id)
+            {
+                addon.context.scheduled_refresh = Some(ScheduledRefresh::OnNormalMapEnter);
+            } else {
+                refresh_kp_thread();
+            }
+            addon.config.refresh_on_next_load = false;
+        }
+    }
 }
 
 #[named]
@@ -31,30 +51,38 @@ fn refresh_on_schedule() {
             refresh_kp_thread();
         }
     }
+    let mut retain_refresh = false;
+    if let Some(m) = addon.context.mumble {
+        retain_refresh = addon
+            .config
+            .retain_refresh_map_ids
+            .contains(&m.read_map_id());
+    }
 
     if !addon.context.on_kp_map
+        && !retain_refresh
         && addon
             .context
             .scheduled_refresh
             .as_ref()
-            .is_some_and(|sr| matches!(sr, ScheduledRefresh::OnKPMapExit))
+            .is_some_and(|sr| matches!(sr, ScheduledRefresh::OnNormalMapEnter))
     {
-        info!("[{}] map exit refresh executed", function_name!());
+        info!("[{}] map enter refresh executed", function_name!());
         addon.context.scheduled_refresh = None;
         refresh_kp_thread();
     }
 }
 
 #[named]
-fn schedule_on_map_exit() {
+fn schedule_on_map_enter() {
     let mut addon = Addon::lock();
     match addon.context.mumble {
         Some(m) => {
             let previous_map_on_kp = addon.context.on_kp_map;
             addon.context.on_kp_map = addon.config.kp_map_ids.contains(&m.read_map_id());
             if !previous_map_on_kp && addon.context.on_kp_map {
-                info!("[{}] refresh on kp map exit scheduled", function_name!());
-                addon.context.scheduled_refresh = Some(ScheduledRefresh::OnKPMapExit);
+                info!("[{}] refresh on enter scheduled", function_name!());
+                addon.context.scheduled_refresh = Some(ScheduledRefresh::OnNormalMapEnter);
             }
         }
         None => addon.context.on_kp_map = false,

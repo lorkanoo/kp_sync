@@ -1,6 +1,5 @@
 use crate::config::{config_dir, Config};
 use crate::context::Context;
-use crate::kp::refresh_kp_thread;
 use crate::thread::background_thread;
 use function_name::named;
 use log::info;
@@ -9,7 +8,7 @@ use std::fs;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::thread::JoinHandle;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 static MULTITHREADED_ADDON: MultithreadedAddon = MultithreadedAddon {
     addon: OnceLock::new(),
     threads: OnceLock::new(),
@@ -59,8 +58,8 @@ impl Addon {
             }
         }
 
+        migrate_configs(&mut Addon::lock());
         init_context(&mut Addon::lock());
-        refresh_on_load(&mut Addon::lock());
         background_thread();
 
         register_render(
@@ -94,11 +93,8 @@ impl Addon {
     }
 }
 
-fn refresh_on_load(addon: &mut MutexGuard<Addon>) {
-    if addon.config.refresh_on_next_load {
-        addon.config.refresh_on_next_load = false;
-        refresh_kp_thread();
-    }
+fn migrate_configs(addon: &mut MutexGuard<Addon>) {
+    addon.config.version = VERSION.to_string();
 }
 
 fn init_context(addon: &mut MutexGuard<Addon>) {
