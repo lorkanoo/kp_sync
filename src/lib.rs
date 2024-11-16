@@ -1,7 +1,7 @@
 mod addon;
+mod api;
 mod config;
 mod context;
-mod kp;
 mod render;
 mod thread;
 

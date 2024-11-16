@@ -1,4 +1,5 @@
-use crate::kp::api::{get_sync, kp_path, print_error_chain};
+use crate::api::kp::kp_path;
+use crate::api::{get_sync, print_error_chain};
 use ::function_name::named;
 use log::{debug, error, warn};
 use select::document::Document;

@@ -1,9 +1,9 @@
 pub mod scheduled_refresh;
 mod ui;
 
+use crate::api::kp::kp_response::KpResponse;
 use crate::context::scheduled_refresh::ScheduledRefresh;
 use crate::context::ui::UiContext;
-use crate::kp::api::kp_response::KpResponse;
 use nexus::data_link::get_mumble_link;
 use nexus::data_link::mumble::MumblePtr;
 

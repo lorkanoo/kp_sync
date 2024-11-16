@@ -1,6 +1,6 @@
 use crate::addon::Addon;
-use crate::kp::api::kp_response::KpResponse;
-use crate::kp::{fetch_linked_ids_thread, refresh_kp_thread};
+use crate::api::kp::kp_response::KpResponse;
+use crate::api::kp::{fetch_linked_ids_thread, refresh_kp_thread};
 use crate::render::options::ERROR_COLOR;
 use crate::render::{separate_with_spacing, table_rows};
 use nexus::imgui::Ui;

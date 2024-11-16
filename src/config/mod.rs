@@ -90,6 +90,6 @@ fn default_kp_map_ids() -> Vec<u32> {
 
 fn default_retain_refresh_map_ids() -> Vec<u32> {
     vec![
-        1155, 1370, 1509, 1428, // hubs
+        1154, 1155, 1370, 1509, 1428, // hubs
     ]
 }

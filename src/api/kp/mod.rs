@@ -1,16 +1,24 @@
+pub mod kp_response;
+pub mod linked_ids;
+pub mod refresh;
+
 use crate::addon::Addon;
+use crate::api::kp::kp_response::failure_reason::FailureReason;
+use crate::api::kp::kp_response::KpResponse;
+use crate::api::kp::linked_ids::fetch_linked_ids;
+use crate::api::kp::refresh::refresh_kill_proof;
 use crate::context::scheduled_refresh::ScheduledRefresh;
-use crate::kp::api::kp_response::failure_reason::FailureReason;
-use crate::kp::api::kp_response::KpResponse;
-use crate::kp::api::linked_ids::fetch_linked_ids;
-use crate::kp::api::refresh::refresh_kill_proof;
 use chrono::Local;
 use function_name::named;
 use log::{debug, info, warn};
 use std::ops::Add;
 use std::thread;
 
-pub mod api;
+const KP_URL: &str = "https://killproof.me";
+
+fn kp_path(kp_id: &String) -> String {
+    format!("{}/proof/{}", KP_URL, kp_id)
+}
 
 #[named]
 pub fn refresh_kp_thread() {

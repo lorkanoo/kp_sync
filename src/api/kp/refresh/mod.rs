@@ -1,6 +1,7 @@
-use crate::kp::api::kp_response::failure_reason::FailureReason;
-use crate::kp::api::kp_response::KpResponse;
-use crate::kp::api::{get_sync, kp_path, print_error_chain, KP_URL};
+use crate::api::kp::kp_response::failure_reason::FailureReason;
+use crate::api::kp::kp_response::KpResponse;
+use crate::api::kp::{kp_path, KP_URL};
+use crate::api::{get_sync, print_error_chain};
 use ::function_name::named;
 use log::{error, warn};
 use regex::Regex;

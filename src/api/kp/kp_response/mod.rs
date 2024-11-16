@@ -1,6 +1,6 @@
 pub mod failure_reason;
 
-use crate::kp::api::kp_response::failure_reason::FailureReason;
+use crate::api::kp::kp_response::failure_reason::FailureReason;
 use std::fmt;
 
 #[derive(Debug, Clone)]

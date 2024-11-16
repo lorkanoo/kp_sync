@@ -1,9 +1,11 @@
+use crate::api::gw2::fetch_map_names_thread;
 use crate::config::{config_dir, Config};
 use crate::context::Context;
 use crate::thread::background_thread;
 use function_name::named;
 use log::info;
 use nexus::gui::{register_render, RenderType};
+use semver::Version;
 use std::fs;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::thread::JoinHandle;
@@ -60,6 +62,7 @@ impl Addon {
 
         migrate_configs(&mut Addon::lock());
         init_context(&mut Addon::lock());
+        fetch_map_names_thread();
         background_thread();
 
         register_render(
@@ -94,7 +97,14 @@ impl Addon {
 }
 
 fn migrate_configs(addon: &mut MutexGuard<Addon>) {
+    if version_older_than(addon.config.version.as_str(), "0.9.6") {
+        addon.config.retain_refresh_map_ids.push(1154);
+    }
     addon.config.version = VERSION.to_string();
+}
+
+fn version_older_than(older: &str, than: &str) -> bool {
+    Version::parse(older).unwrap() < Version::parse(than).unwrap()
 }
 
 fn init_context(addon: &mut MutexGuard<Addon>) {

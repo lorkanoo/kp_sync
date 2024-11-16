@@ -1,12 +1,9 @@
-pub mod kp_response;
-pub mod linked_ids;
-pub mod refresh;
-
 use log::error;
-use reqwest::{self, Error};
-use std::error::Error as StdError;
+use reqwest::Error;
+use serde::de::StdError;
 
-const KP_URL: &str = "https://killproof.me";
+pub mod gw2;
+pub mod kp;
 
 fn print_error_chain(error: &dyn StdError) {
     error!("Error: {}", error);
@@ -24,8 +21,4 @@ fn get_sync(url: String) -> Result<reqwest::blocking::Response, Error> {
         .build()
         .expect("error");
     client.get(url).send()
-}
-
-fn kp_path(kp_id: &String) -> String {
-    format!("{}/proof/{}", KP_URL, kp_id)
 }
