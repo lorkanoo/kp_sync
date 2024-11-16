@@ -98,5 +98,5 @@ fn migrate_configs(addon: &mut MutexGuard<Addon>) {
 }
 
 fn init_context(addon: &mut MutexGuard<Addon>) {
-    addon.context.previous_main_id = addon.config.kp_identifiers.main_id.clone();
+    addon.context.ui.previous_main_id = addon.config.kp_identifiers.main_id.clone();
 }

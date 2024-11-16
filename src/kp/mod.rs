@@ -93,7 +93,7 @@ pub fn fetch_linked_ids_thread() {
         let mut addon = Addon::lock();
         if ids.is_empty() {
             addon.config.kp_identifiers.linked_ids = None;
-            addon.context.show_linked_ids_err = true;
+            addon.context.ui.errors.linked_ids = true;
         } else {
             addon.config.kp_identifiers.linked_ids = Some(ids);
         }

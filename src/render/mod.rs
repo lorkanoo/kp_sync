@@ -8,11 +8,27 @@ fn separate_with_spacing(ui: &Ui) {
     ui.spacing();
 }
 
-fn table_rows(ui: &Ui, rows: Vec<(String, String)>) {
-    for (c1, c2) in rows {
+trait Renderable {
+    fn render(&mut self, ui: &Ui);
+}
+
+impl Renderable for String {
+    fn render(&mut self, ui: &Ui) {
         ui.table_next_column();
-        ui.text(c1);
-        ui.table_next_column();
-        ui.text(c2);
+        ui.text(self);
+    }
+}
+
+impl<T: Renderable, Rest: Renderable> Renderable for (T, Rest) {
+    fn render(&mut self, ui: &Ui) {
+        let (ref mut first, ref mut rest) = self;
+        first.render(ui);
+        rest.render(ui);
+    }
+}
+
+fn table_rows<T: Renderable>(ui: &Ui, rows: Vec<T>) {
+    for mut row in rows {
+        row.render(ui);
     }
 }

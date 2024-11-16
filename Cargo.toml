@@ -1,6 +1,6 @@
 [package]
 name = "kp_sync"
-version = "0.9.4"
+version = "0.9.5"
 authors = ["lorkanoo"]
 edition = "2021"
 description = "Kill proof synchronizer"
@@ -20,6 +20,7 @@ function_name = "0.3.0"
 nexus = { git = "https://github.com/zerthox/nexus-rs", features = ["log", "mumble_json"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 select = "0.6.0"
+open = "5.3.1"
 
 [build-dependencies]
 winresource = "0.1.17"
