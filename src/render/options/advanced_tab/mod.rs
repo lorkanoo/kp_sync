@@ -92,23 +92,27 @@ impl Addon {
                 .iter()
                 .filter(|(map_id, map_name)| {
                     let map_id_u32 = &map_id.parse().unwrap();
-                    map_name.to_lowercase().contains(search_term)
+                    format!("{} ({})", map_name.to_lowercase(), map_id).contains(search_term)
                         && !self.config.kp_map_ids.contains(map_id_u32)
                         && !self.config.retain_refresh_map_ids.contains(map_id_u32)
                 })
-                .take(3)
+                .take(6)
                 .collect();
-
-            for (id, map_name) in search_results {
-                if ui.button(format!("{} ({})", map_name, id)) {
-                    match map_type {
-                        SearchMapType::KpMap => self.config.kp_map_ids.push(id.parse().unwrap()),
-                        SearchMapType::RetainMap => {
-                            self.config.retain_refresh_map_ids.push(id.parse().unwrap())
+            for chunk in search_results.chunks(2) {
+                for (id, map_name) in chunk {
+                    if ui.button(format!("{} ({})", map_name, id)) {
+                        match map_type {
+                            SearchMapType::KpMap => {
+                                self.config.kp_map_ids.push(id.parse().unwrap())
+                            }
+                            SearchMapType::RetainMap => {
+                                self.config.retain_refresh_map_ids.push(id.parse().unwrap())
+                            }
                         }
                     }
+                    ui.same_line();
                 }
-                ui.same_line();
+                ui.new_line();
             }
         }
     }
