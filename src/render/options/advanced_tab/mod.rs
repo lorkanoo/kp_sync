@@ -4,14 +4,17 @@ use nexus::imgui::Ui;
 
 impl Addon {
     pub fn render_advanced_tab(&mut self, ui: &Ui) {
+        self.render_notification_options(ui);
         ui.text("Maps that schedule refresh to be triggered when non-kp map is loaded: ");
         ui.spacing();
         self.render_kp_maps(ui);
         separate_with_spacing(ui);
+
         ui.text("Maps that extend scheduled refresh until non-kp map is loaded: ");
         ui.spacing();
         self.render_retain_refresh_maps(ui);
         separate_with_spacing(ui);
+
         ui.text("Additional information:");
         ui.spacing();
         if let Some(m) = self.context.mumble {
@@ -23,6 +26,26 @@ impl Addon {
                 log::error!("Failed to open map ids url: {err}");
             }
         }
+    }
+
+    fn render_notification_options(&mut self, ui: &Ui) {
+        ui.text("Notifications");
+        ui.spacing();
+        let notifications = &mut self.config.notifications;
+        ui.checkbox(
+            "Notify on successful refresh",
+            &mut notifications.notify_success,
+        );
+        ui.checkbox("Notify on scheduled retry", &mut notifications.notify_retry);
+        ui.checkbox(
+            "Notify on failed refresh",
+            &mut notifications.notify_failure,
+        );
+        ui.checkbox(
+            "Notify on failed linked account refresh",
+            &mut self.config.notifications.notify_failure_linked,
+        );
+        separate_with_spacing(ui);
     }
 
     fn render_kp_maps(&mut self, ui: &Ui) {

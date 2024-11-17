@@ -1,7 +1,9 @@
 mod killproof_identifiers;
+mod notifications;
 
 use crate::addon::VERSION;
 use crate::config::killproof_identifiers::KillproofIdentifiers;
+use crate::config::notifications::Notifications;
 use chrono::{DateTime, Local};
 use log::info;
 use nexus::paths::get_addon_dir;
@@ -15,6 +17,7 @@ use std::path::PathBuf;
 pub struct Config {
     #[serde(default = "default_version")]
     pub version: String,
+    #[serde(default = "KillproofIdentifiers::default")]
     pub kp_identifiers: KillproofIdentifiers,
     pub last_refresh_date: Option<DateTime<Local>>,
     pub refresh_on_next_load: bool,
@@ -22,6 +25,8 @@ pub struct Config {
     pub kp_map_ids: Vec<u32>,
     #[serde(default = "default_retain_refresh_map_ids")]
     pub retain_refresh_map_ids: Vec<u32>,
+    #[serde(default = "Notifications::default")]
+    pub notifications: Notifications,
 }
 
 const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9]+\.[0-9]{4})$";
@@ -35,6 +40,7 @@ impl Config {
             refresh_on_next_load: false,
             kp_map_ids: default_kp_map_ids(),
             retain_refresh_map_ids: default_retain_refresh_map_ids(),
+            notifications: Notifications::default(),
         }
     }
 

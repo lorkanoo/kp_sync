@@ -11,8 +11,10 @@ use crate::context::scheduled_refresh::ScheduledRefresh;
 use chrono::Local;
 use function_name::named;
 use log::{debug, info, warn};
+use nexus::alert::send_alert;
 use std::ops::Add;
 use std::thread;
+use std::time::Duration;
 
 const KP_URL: &str = "https://killproof.me";
 
@@ -53,6 +55,14 @@ pub fn refresh_kp_thread() {
                 );
                 let kp_response = refresh_kill_proof(&linked_id, false);
                 debug!("[{}] Linked kp response: {}", function_name!(), kp_response);
+                if Addon::lock().config.notifications.notify_failure_linked
+                    && matches!(kp_response, KpResponse::Failure(_))
+                {
+                    send_alert(format!(
+                        "Linked Killproof account {} could not be refreshed",
+                        linked_id
+                    ));
+                }
                 kp_responses.push((linked_id, kp_response));
             }
             Addon::lock().context.linked_kp_responses = kp_responses;
@@ -69,23 +79,43 @@ fn handle_main_kp_response(main_kp_response: KpResponse) {
         KpResponse::Success => {
             addon.config.last_refresh_date = Some(Local::now());
             addon.context.scheduled_refresh = None;
+            if addon.config.notifications.notify_success {
+                send_alert("Killproof refreshed successfully");
+            }
         }
-        KpResponse::Failure(FailureReason::RefreshCooldown(_duration)) => {
+        KpResponse::Failure(FailureReason::RefreshCooldown(duration)) => {
             addon.context.scheduled_refresh =
-                Some(ScheduledRefresh::OnTime(Local::now().add(_duration)));
+                Some(ScheduledRefresh::OnTime(Local::now().add(duration)));
             debug!(
                 "[{}] Failed to refresh, retrying in {:?}s",
                 function_name!(),
-                _duration.as_secs()
+                duration.as_secs()
             );
+            if addon.config.notifications.notify_retry {
+                send_alert(format!(
+                    "Killproof could not be refreshed, retrying in {:?} minute(s)",
+                    minutes(duration)
+                ));
+            }
         }
         KpResponse::InvalidId(_) => {
             addon.context.scheduled_refresh = None;
             addon.config.kp_identifiers.linked_ids = None;
+            if addon.config.notifications.notify_failure {
+                send_alert("Killproof could not be refreshed due to invalid configuration");
+            }
         }
-        _ => {}
+        _ => {
+            if addon.config.notifications.notify_failure {
+                send_alert("Killproof could not be refreshed due to unknown error");
+            }
+        }
     }
     addon.context.main_kp_response = main_kp_response;
+}
+
+fn minutes(_duration: Duration) -> u64 {
+    _duration.as_secs() / 60 + 1
 }
 
 #[named]

@@ -97,8 +97,9 @@ impl Addon {
 }
 
 fn migrate_configs(addon: &mut MutexGuard<Addon>) {
-    if version_older_than(addon.config.version.as_str(), "0.9.6") 
-        && !addon.config.retain_refresh_map_ids.contains(&1154){
+    if version_older_than(addon.config.version.as_str(), "0.9.6")
+        && !addon.config.retain_refresh_map_ids.contains(&1154)
+    {
         addon.config.retain_refresh_map_ids.push(1154);
     }
     addon.config.version = VERSION.to_string();
