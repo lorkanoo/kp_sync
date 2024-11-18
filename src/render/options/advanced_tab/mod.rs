@@ -1,7 +1,7 @@
 use crate::addon::Addon;
+use crate::render::options::ERROR_COLOR;
 use crate::render::separate_with_spacing;
 use nexus::imgui::Ui;
-use crate::render::options::ERROR_COLOR;
 
 impl Addon {
     pub fn render_advanced_tab(&mut self, ui: &Ui) {
@@ -55,7 +55,7 @@ impl Addon {
             ui.table_next_row();
             for (i, map_id) in self.config.kp_map_ids.iter().enumerate() {
                 ui.table_next_column();
-                ui.text_colored(ERROR_COLOR,"[X]");
+                ui.text_colored(ERROR_COLOR, "[X]");
                 ui.same_line_with_pos(-10f32);
                 if ui.invisible_button(format!("-##km{}", map_id), [30f32, 30f32]) {
                     to_remove.push(i);
@@ -126,7 +126,7 @@ impl Addon {
             ui.table_next_row();
             for (i, map_id) in self.config.retain_refresh_map_ids.iter().enumerate() {
                 ui.table_next_column();
-                ui.text_colored(ERROR_COLOR,"[X]");
+                ui.text_colored(ERROR_COLOR, "[X]");
                 ui.same_line_with_pos(-10f32);
                 if ui.invisible_button(format!("##rrm{}", map_id), [30f32, 30f32]) {
                     to_remove.push(i);
