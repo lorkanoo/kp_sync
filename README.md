@@ -23,7 +23,7 @@ Killproof synchronizer for Nexus.
 
 **Options (Advanced)**
 
-![Options (Advanced)](images/options_advanced.png)
+![Options (Advanced)](images/options_advanced.png?)
 
 **Quick Access menu**
 
