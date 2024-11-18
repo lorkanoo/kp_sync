@@ -1,11 +1,11 @@
 use crate::api::gw2::fetch_map_names_thread;
-use crate::config::{config_dir, Config};
-use crate::context::Context;
+use crate::config::{config_dir, migrate_configs, Config};
+use crate::context::{init_context, Context};
 use crate::thread::background_thread;
 use function_name::named;
 use log::info;
 use nexus::gui::{register_render, RenderType};
-use semver::Version;
+use nexus::quick_access::add_quick_access_context_menu;
 use std::fs;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::thread::JoinHandle;
@@ -21,23 +21,17 @@ pub struct MultithreadedAddon {
     pub threads: OnceLock<Mutex<Vec<JoinHandle<()>>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Addon {
     pub config: Config,
     pub context: Context,
 }
 
 impl Addon {
-    pub fn new() -> Self {
-        Self {
-            config: Config::default(),
-            context: Context::default(),
-        }
-    }
     pub fn lock() -> MutexGuard<'static, Addon> {
         MULTITHREADED_ADDON
             .addon
-            .get_or_init(|| Mutex::new(Addon::new()))
+            .get_or_init(|| Mutex::new(Addon::default()))
             .lock()
             .unwrap()
     }
@@ -71,6 +65,12 @@ impl Addon {
         )
         .revert_on_unload();
 
+        add_quick_access_context_menu(
+            "kp_sync",
+            None::<&str>,
+            nexus::gui::render!(|ui| Addon::lock().render_quick_access(ui)),
+        )
+        .revert_on_unload();
         info!("[{}] kp_sync loaded", function_name!());
     }
     #[named]
@@ -94,21 +94,4 @@ impl Addon {
         addon.config.save();
         info!("[{}] kp_sync unloaded", function_name!());
     }
-}
-
-fn migrate_configs(addon: &mut MutexGuard<Addon>) {
-    if version_older_than(addon.config.version.as_str(), "0.9.6")
-        && !addon.config.retain_refresh_map_ids.contains(&1154)
-    {
-        addon.config.retain_refresh_map_ids.push(1154);
-    }
-    addon.config.version = VERSION.to_string();
-}
-
-fn version_older_than(older: &str, than: &str) -> bool {
-    Version::parse(older).unwrap() < Version::parse(than).unwrap()
-}
-
-fn init_context(addon: &mut MutexGuard<Addon>) {
-    addon.context.ui.previous_main_id = addon.config.kp_identifiers.main_id.clone();
 }

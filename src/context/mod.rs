@@ -1,11 +1,13 @@
 pub mod scheduled_refresh;
 mod ui;
 
+use crate::addon::Addon;
 use crate::api::kp::kp_response::KpResponse;
 use crate::context::scheduled_refresh::ScheduledRefresh;
 use crate::context::ui::UiContext;
 use nexus::data_link::get_mumble_link;
 use nexus::data_link::mumble::MumblePtr;
+use std::sync::MutexGuard;
 
 #[derive(Debug, Clone)]
 pub struct Context {
@@ -19,8 +21,8 @@ pub struct Context {
     pub ui: UiContext,
 }
 
-impl Context {
-    pub fn default() -> Self {
+impl Default for Context {
+    fn default() -> Self {
         Self {
             main_kp_response: KpResponse::Unavailable,
             linked_kp_responses: vec![],
@@ -32,4 +34,16 @@ impl Context {
             ui: UiContext::default(),
         }
     }
+}
+impl Context {
+    pub fn valid(&mut self, main_kp_id: &str) -> bool {
+        match &self.main_kp_response {
+            KpResponse::InvalidId(invalid_id) => invalid_id != main_kp_id,
+            _ => true,
+        }
+    }
+}
+
+pub fn init_context(addon: &mut MutexGuard<Addon>) {
+    addon.context.ui.previous_main_id = addon.config.kp_identifiers.main_id.clone();
 }

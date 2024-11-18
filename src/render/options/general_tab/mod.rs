@@ -1,8 +1,9 @@
 use crate::addon::Addon;
 use crate::api::kp::kp_response::KpResponse;
-use crate::api::kp::{fetch_linked_ids_thread, refresh_kp_thread};
+use crate::api::kp::linked_ids::fetch_linked_ids_thread;
+use crate::api::kp::refresh::refresh_kp_thread;
 use crate::render::options::ERROR_COLOR;
-use crate::render::{separate_with_spacing, table_rows};
+use crate::render::{scheduled_refresh_text, separate_with_spacing, table_rows};
 use nexus::imgui::Ui;
 
 impl Addon {
@@ -21,7 +22,7 @@ impl Addon {
         }
 
         if self.config.valid() {
-            if self.context_valid() {
+            if self.context.valid(&self.config.kp_identifiers.main_id) {
                 self.render_on_valid_state(ui);
             }
         } else if let KpResponse::InvalidId(invalid_id) = &self.context.main_kp_response {
@@ -38,13 +39,6 @@ impl Addon {
 
     fn kp_id_changed(&mut self) -> bool {
         self.config.kp_identifiers.main_id != self.context.ui.previous_main_id
-    }
-
-    fn context_valid(&mut self) -> bool {
-        match &self.context.main_kp_response {
-            KpResponse::InvalidId(invalid_id) => invalid_id != &self.config.kp_identifiers.main_id,
-            _ => true,
-        }
     }
 
     fn on_kp_id_change(&mut self) {
@@ -84,7 +78,7 @@ impl Addon {
                     ("Current status".to_string(), self.current_status_text()),
                     (
                         "Scheduled refresh".to_string(),
-                        self.scheduled_refresh_text(),
+                        scheduled_refresh_text(&self.context.scheduled_refresh),
                     ),
                     (
                         "Last successful refresh".to_string(),
@@ -110,13 +104,6 @@ impl Addon {
             Some(last_refresh) => last_refresh.format("%Y-%m-%d %H:%M").to_string(),
             None => "unavailable".to_string(),
         }
-    }
-
-    fn scheduled_refresh_text(&mut self) -> String {
-        self.context
-            .scheduled_refresh
-            .as_ref()
-            .map_or_else(|| "not planned".to_string(), |refresh| refresh.to_string())
     }
 
     fn render_linked_ids(&mut self, ui: &Ui) {

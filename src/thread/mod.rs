@@ -1,5 +1,5 @@
 use crate::addon::Addon;
-use crate::api::kp::refresh_kp_thread;
+use crate::api::kp::refresh::refresh_kp_thread;
 use crate::context::scheduled_refresh::ScheduledRefresh;
 use chrono::Local;
 use function_name::named;

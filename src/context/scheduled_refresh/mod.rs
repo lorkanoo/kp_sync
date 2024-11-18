@@ -1,3 +1,4 @@
+use crate::render::countdown_str;
 use chrono::{DateTime, Local};
 use std::fmt;
 
@@ -13,21 +14,7 @@ impl fmt::Display for ScheduledRefresh {
             ScheduledRefresh::OnNormalMapEnter => write!(f, "on normal map enter"),
             ScheduledRefresh::OnTime(time) => {
                 let delta = time.signed_duration_since(Local::now());
-                if delta.num_minutes() > 0 {
-                    write!(f, "in {} minutes", delta.num_minutes() + 1)
-                } else {
-                    let seconds = delta.num_seconds();
-                    if seconds > 0 {
-                        write!(
-                            f,
-                            "in {} second{}",
-                            seconds,
-                            if seconds > 1 { "s" } else { "" }
-                        )
-                    } else {
-                        write!(f, "starts soon..")
-                    }
-                }
+                write!(f, "in {}", countdown_str(delta))
             }
         }
     }

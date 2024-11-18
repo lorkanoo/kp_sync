@@ -1,17 +1,19 @@
 mod killproof_identifiers;
 mod notifications;
 
-use crate::addon::VERSION;
+use crate::addon::{Addon, VERSION};
 use crate::config::killproof_identifiers::KillproofIdentifiers;
 use crate::config::notifications::Notifications;
 use chrono::{DateTime, Local};
 use log::info;
 use nexus::paths::get_addon_dir;
 use regex::Regex;
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
+use std::sync::MutexGuard;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -31,8 +33,8 @@ pub struct Config {
 
 const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9]+\.[0-9]{4})$";
 
-impl Config {
-    pub fn default() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         Self {
             version: VERSION.to_string(),
             kp_identifiers: KillproofIdentifiers::default(),
@@ -43,7 +45,9 @@ impl Config {
             notifications: Notifications::default(),
         }
     }
+}
 
+impl Config {
     pub fn try_load() -> Option<Self> {
         let path = Self::file();
         let file = File::open(&path)
@@ -98,4 +102,17 @@ fn default_retain_refresh_map_ids() -> Vec<u32> {
     vec![
         1154, 1155, 1370, 1509, 1428, // hubs
     ]
+}
+
+pub fn migrate_configs(addon: &mut MutexGuard<Addon>) {
+    if version_older_than(addon.config.version.as_str(), "0.9.6")
+        && !addon.config.retain_refresh_map_ids.contains(&1154)
+    {
+        addon.config.retain_refresh_map_ids.push(1154);
+    }
+    addon.config.version = VERSION.to_string();
+}
+
+fn version_older_than(older: &str, than: &str) -> bool {
+    Version::parse(older).unwrap() < Version::parse(than).unwrap()
 }

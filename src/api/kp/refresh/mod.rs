@@ -1,96 +1,108 @@
+pub mod request;
+
+use crate::addon::Addon;
 use crate::api::kp::kp_response::failure_reason::FailureReason;
 use crate::api::kp::kp_response::KpResponse;
-use crate::api::kp::{kp_path, KP_URL};
-use crate::api::{get_sync, print_error_chain};
+use crate::api::kp::linked_ids::refresh_linked_kp;
+use crate::api::kp::refresh::request::refresh_kp_request;
+use crate::context::scheduled_refresh::ScheduledRefresh;
+use crate::render::countdown_str;
 use ::function_name::named;
-use log::{error, warn};
-use regex::Regex;
-use reqwest::{self, StatusCode};
+use chrono::{Local, TimeDelta};
+use log::{debug, info, warn};
+use nexus::alert::send_alert;
+use std::ops::Add;
+use std::sync::MutexGuard;
+use std::thread;
 use std::time::Duration;
 
-const DEFAULT_RETRY_FREQUENCY: Duration = Duration::new(5 * 60, 0);
-
 #[named]
-pub fn refresh_kill_proof(kp_id: &String, fetch_cooldown: bool) -> KpResponse {
-    let path = refresh_path(kp_id);
-
-    match get_sync(path) {
-        Ok(response) => match response.status() {
-            StatusCode::OK => match response.text() {
-                Ok(html) => {
-                    if html.contains(r#"status":"ok"#) {
-                        KpResponse::Success
-                    } else {
-                        KpResponse::InvalidId(kp_id.clone())
-                    }
-                }
-                Err(_) => KpResponse::Failure(FailureReason::Unknown),
-            },
-            StatusCode::FORBIDDEN => KpResponse::Failure(FailureReason::NotAccessible),
-            StatusCode::NOT_FOUND => KpResponse::Failure(FailureReason::NotFound),
-            StatusCode::NOT_MODIFIED => {
-                if fetch_cooldown {
-                    cooldown_response(kp_id)
-                } else {
-                    default_cooldown_response()
-                }
-            }
-            _ => {
-                error!(
-                    "[{}] Unknown status: {}",
-                    function_name!(),
-                    response.status()
-                );
-                KpResponse::Failure(FailureReason::Unknown)
-            }
-        },
-        Err(error) => {
-            error!("[{}] Unknown error: {}", function_name!(), error);
-            print_error_chain(&error);
-            KpResponse::Failure(FailureReason::Unknown)
-        }
+fn cant_start_refresh() -> bool {
+    if !Addon::lock().config.valid() {
+        warn!("[{}] addon configuration is not valid", function_name!());
+        return true;
     }
+    if Addon::lock().context.refresh_in_progress {
+        warn!("[{}] refresh is already in progress", function_name!());
+        return true;
+    }
+    false
 }
 
 #[named]
-fn cooldown_response(kp_id: &String) -> KpResponse {
-    match get_sync(kp_path(kp_id)) {
-        Ok(response) => match response.text() {
-            Ok(html) => match extract_duration(html) {
-                Some(duration) => KpResponse::Failure(FailureReason::RefreshCooldown(duration)),
-                None => default_cooldown_response(),
-            },
-            _ => {
-                warn!("[{}] Could not get html", function_name!());
-                default_cooldown_response()
+pub fn refresh_kp_thread() {
+    Addon::threads().push(thread::spawn(|| {
+        debug!("[{}] started", function_name!());
+        if cant_start_refresh() {
+            return;
+        }
+        Addon::lock().context.refresh_in_progress = true;
+
+        let kp_id = Addon::lock().config.kp_identifiers.main_id.clone();
+        Addon::lock().context.linked_kp_responses = vec![];
+
+        let main_kp_response = refresh_kp_request(&kp_id, true);
+        handle_main_kp_response(main_kp_response);
+
+        let linked_ids = Addon::lock().config.kp_identifiers.linked_ids.clone();
+
+        if let Some(linked_ids) = linked_ids {
+            let mut kp_responses: Vec<(String, KpResponse)> = Vec::new();
+            for linked_id in linked_ids {
+                let kp_response = refresh_linked_kp(&linked_id);
+                kp_responses.push((linked_id, kp_response));
             }
-        },
-        Err(error) => {
-            error!("[{}] Unknown error: {}", function_name!(), error);
-            print_error_chain(&error);
-            default_cooldown_response()
+            Addon::lock().context.linked_kp_responses = kp_responses;
+        }
+        info!("[{}] refresh status updated", function_name!());
+        Addon::lock().context.refresh_in_progress = false;
+    }));
+}
+fn handle_main_kp_response(main_kp_response: KpResponse) {
+    let mut addon = Addon::lock();
+    match main_kp_response {
+        KpResponse::Success => handle_success_kp_response(&mut addon),
+        KpResponse::Failure(FailureReason::RefreshCooldown(duration)) => {
+            handle_failure_cooldown_kp_response(&mut addon, duration)
+        }
+        KpResponse::InvalidId(_) => handle_invalid_id_kp_response(&mut addon),
+        _ => {
+            if addon.config.notifications.notify_failure {
+                send_alert("Killproof could not be refreshed due to unknown error");
+            }
         }
     }
+    addon.context.main_kp_response = main_kp_response;
 }
 
-fn default_cooldown_response() -> KpResponse {
-    KpResponse::Failure(FailureReason::RefreshCooldown(DEFAULT_RETRY_FREQUENCY))
-}
-
-fn extract_duration(text: String) -> Option<Duration> {
-    let re = Regex::new(r"Time until next refresh available is (\d+) minute").unwrap();
-    let buffer = 30;
-    if let Some(caps) = re.captures(text.as_str()) {
-        caps.get(1)?
-            .as_str()
-            .parse::<u64>()
-            .ok()
-            .map(|minutes| Duration::new(minutes * 60 + buffer, 0))
-    } else {
-        None
+fn handle_invalid_id_kp_response(addon: &mut MutexGuard<Addon>) {
+    addon.context.scheduled_refresh = None;
+    addon.config.kp_identifiers.linked_ids = None;
+    if addon.config.notifications.notify_failure {
+        send_alert("Killproof could not be refreshed due to invalid configuration");
     }
 }
 
-fn refresh_path(kp_id: &String) -> String {
-    format!("{}/proof/{}/refresh", KP_URL, kp_id)
+fn handle_success_kp_response(addon: &mut MutexGuard<Addon>) {
+    addon.config.last_refresh_date = Some(Local::now());
+    addon.context.scheduled_refresh = None;
+    if addon.config.notifications.notify_success {
+        send_alert("Killproof refreshed successfully");
+    }
+}
+
+#[named]
+fn handle_failure_cooldown_kp_response(addon: &mut MutexGuard<Addon>, duration: Duration) {
+    addon.context.scheduled_refresh = Some(ScheduledRefresh::OnTime(Local::now().add(duration)));
+    debug!(
+        "[{}] Failed to refresh, retrying in {:?}s",
+        function_name!(),
+        duration.as_secs()
+    );
+    if addon.config.notifications.notify_retry {
+        send_alert(format!(
+            "Killproof could not be refreshed, retrying in {}",
+            countdown_str(TimeDelta::seconds(duration.as_secs() as i64))
+        ));
+    }
 }

@@ -1,7 +1,7 @@
 mod addon;
 mod api;
-mod config;
-mod context;
+pub mod config;
+pub mod context;
 mod render;
 mod thread;
 
