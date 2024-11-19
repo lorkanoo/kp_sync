@@ -94,7 +94,7 @@ fn default_version() -> String {
 fn default_kp_map_ids() -> Vec<u32> {
     vec![
         1339, 1351, 1432, 1450, 1451, 1437, 1485, 1515, 1520, // strikes
-        1062, 1149, 1156, 1188, 1264, 1303, 1323, // raids
+        1062, 1149, 1156, 1188, 1264, 1303, 1323, 1564 // raids
     ]
 }
 
@@ -109,6 +109,11 @@ pub fn migrate_configs(addon: &mut MutexGuard<Addon>) {
         && !addon.config.retain_refresh_map_ids.contains(&1154)
     {
         addon.config.retain_refresh_map_ids.push(1154);
+    }
+    if version_older_than(addon.config.version.as_str(), "1.0.0")
+        && !addon.config.kp_map_ids.contains(&1564)
+    {
+        addon.config.kp_map_ids.push(1564);
     }
     addon.config.version = VERSION.to_string();
 }
