@@ -10,6 +10,8 @@ impl Addon {
     pub fn render_general_tab(&mut self, ui: &Ui) {
         self.render_status_table(ui);
         separate_with_spacing(ui);
+        ui.text("Configuration");
+        ui.spacing();
         ui.input_text(
             "Kill proof id / account name",
             &mut self.config.kp_identifiers.main_id,
@@ -54,6 +56,9 @@ impl Addon {
             refresh_kp_thread();
         }
         let mut checkbox_checked = self.config.kp_identifiers.linked_ids.is_some();
+        separate_with_spacing(ui);
+        ui.text("Linked accounts");
+        ui.spacing();
         ui.checkbox("Refresh linked accounts", &mut checkbox_checked);
 
         if checkbox_checked {
@@ -116,6 +121,12 @@ impl Addon {
                 ui.text("Linked accounts:");
                 for id in ids {
                     ui.text(format!("- {}", id));
+                }
+                ui.spacing();
+                if ui.button("Update account list") {
+                    self.context.ui.errors.linked_ids = false;
+                    self.config.kp_identifiers.linked_ids = Some(Vec::new());
+                    fetch_linked_ids_thread();
                 }
             }
 

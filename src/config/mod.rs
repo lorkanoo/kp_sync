@@ -29,6 +29,8 @@ pub struct Config {
     pub retain_refresh_map_ids: Vec<u32>,
     #[serde(default = "Notifications::default")]
     pub notifications: Notifications,
+    #[serde(default = "yes")]
+    pub scheduling_on_map_enter_enabled: bool,
 }
 
 const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9]+\.[0-9]{4})$";
@@ -43,6 +45,7 @@ impl Default for Config {
             kp_map_ids: default_kp_map_ids(),
             retain_refresh_map_ids: default_retain_refresh_map_ids(),
             notifications: Notifications::default(),
+            scheduling_on_map_enter_enabled: yes(),
         }
     }
 }
@@ -120,4 +123,8 @@ pub fn migrate_configs(addon: &mut MutexGuard<Addon>) {
 
 fn version_older_than(older: &str, than: &str) -> bool {
     Version::parse(older).unwrap() < Version::parse(than).unwrap()
+}
+
+fn yes() -> bool {
+    true
 }

@@ -6,25 +6,29 @@ use nexus::imgui::Ui;
 impl Addon {
     pub fn render_advanced_tab(&mut self, ui: &Ui) {
         self.render_notification_options(ui);
-        ui.text("Maps that schedule refresh to be triggered when non-kp map is loaded: ");
+        ui.text("Configuration");
         ui.spacing();
-        self.render_kp_maps(ui);
-        separate_with_spacing(ui);
-
-        ui.text("Maps that extend scheduled refresh until non-kp map is loaded: ");
-        ui.spacing();
-        self.render_retain_refresh_maps(ui);
-        separate_with_spacing(ui);
-
-        ui.text("Additional information:");
-        ui.spacing();
-        if let Some(m) = self.context.mumble {
-            ui.text(format!("Current map id: {}", m.read_map_id()));
-        }
-        ui.spacing();
-        if ui.button("Browse map ids") {
-            if let Err(err) = open::that_detached("https://api.guildwars2.com/v1/map_names.json") {
-                log::error!("Failed to open map ids url: {err}");
+        ui.checkbox("Enable scheduling on map load", &mut self.config.scheduling_on_map_enter_enabled);
+        ui.new_line();
+        if self.config.scheduling_on_map_enter_enabled {
+            ui.text("Maps that schedule refresh to be triggered when non-kp map is loaded: ");
+            ui.spacing();
+            self.render_kp_maps(ui);
+            ui.new_line();
+            ui.text("Maps that extend scheduled refresh until non-kp map is loaded: ");
+            ui.spacing();
+            self.render_retain_refresh_maps(ui);
+            ui.new_line();
+            ui.text("Additional information:");
+            ui.spacing();
+            if let Some(m) = self.context.mumble {
+                ui.text(format!("Current map id: {}", m.read_map_id()));
+            }
+            ui.spacing();
+            if ui.button("Browse map ids") {
+                if let Err(err) = open::that_detached("https://api.guildwars2.com/v1/map_names.json") {
+                    log::error!("Failed to open map ids url: {err}");
+                }
             }
         }
     }
