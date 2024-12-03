@@ -10,7 +10,9 @@ impl Addon {
     pub fn render_general_tab(&mut self, ui: &Ui) {
         self.render_status_table(ui);
         ui.new_line();
-        let mut state_is_valid = false;
+        let config_valid = self.config.valid();
+        let context_valid =
+            { config_valid && self.context.valid(&self.config.kp_identifiers.main_id) };
         if ui.collapsing_header(
             "Configuration##kp",
             TreeNodeFlags::SPAN_AVAIL_WIDTH | TreeNodeFlags::DEFAULT_OPEN,
@@ -42,12 +44,9 @@ impl Addon {
                 self.context.ui.previous_main_id = self.config.kp_identifiers.main_id.clone();
             }
 
-            if self.config.valid() {
-                if self.context.valid(&self.config.kp_identifiers.main_id) {
-                    state_is_valid = true;
-                    if ui.button("Refresh") {
-                        refresh_kp_thread();
-                    }
+            if config_valid {
+                if context_valid && ui.button("Refresh") {
+                    refresh_kp_thread();
                 }
             } else if let KpResponse::InvalidId(invalid_id) = &self.context.main_kp_response {
                 if invalid_id.eq(&self.config.kp_identifiers.main_id) {
@@ -66,7 +65,7 @@ impl Addon {
             "Linked accounts##kp",
             TreeNodeFlags::SPAN_AVAIL_WIDTH | TreeNodeFlags::DEFAULT_OPEN,
         ) {
-            if state_is_valid {
+            if config_valid && context_valid {
                 self.render_linked_accounts(ui);
             } else {
                 ui.text_disabled("Enter valid Kill proof id to see linked accounts options.")
