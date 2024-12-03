@@ -17,7 +17,7 @@ impl Addon {
         ) {
             ui.spacing();
             if ui.checkbox(
-                "Use arcdps account name (requires arcdps installed)",
+                "Autodetect account name (requires arcdps installed)",
                 &mut self.config.use_arcdps,
             ) {
                 self.context.scheduled_refresh = None;
