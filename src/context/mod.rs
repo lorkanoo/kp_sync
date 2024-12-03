@@ -19,6 +19,7 @@ pub struct Context {
     pub run_background_thread: bool,
     pub refresh_in_progress: bool,
     pub ui: UiContext,
+    pub arcdps_account_name: String,
 }
 
 impl Default for Context {
@@ -31,7 +32,8 @@ impl Default for Context {
             scheduled_refresh: None,
             run_background_thread: true,
             refresh_in_progress: false,
-            ui: UiContext::default(),
+            ui: Default::default(),
+            arcdps_account_name: "".to_string(),
         }
     }
 }

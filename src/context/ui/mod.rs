@@ -14,8 +14,8 @@ pub struct Errors {
     pub linked_ids: bool,
 }
 
-impl UiContext {
-    pub fn default() -> Self {
+impl Default for UiContext {
+    fn default() -> Self {
         Self {
             previous_main_id: "".to_string(),
             new_kp_map_search_term: "".to_string(),

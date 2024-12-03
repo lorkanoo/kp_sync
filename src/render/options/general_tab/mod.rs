@@ -16,11 +16,26 @@ impl Addon {
             TreeNodeFlags::SPAN_AVAIL_WIDTH | TreeNodeFlags::DEFAULT_OPEN,
         ) {
             ui.spacing();
-            ui.input_text(
-                "Kill proof id / account name",
-                &mut self.config.kp_identifiers.main_id,
-            )
+            if ui.checkbox(
+                "Use arcdps account name (requires arcdps installed)",
+                &mut self.config.use_arcdps,
+            ) {
+                self.context.scheduled_refresh = None;
+            }
+            ui.spacing();
+            if self.config.use_arcdps {
+                ui.text_disabled(format!(
+                    "Account name: {}",
+                    self.context.arcdps_account_name
+                ));
+                ui.spacing();
+            } else {
+                ui.input_text(
+                    "Kill proof id / account name",
+                    &mut self.config.kp_identifiers.main_id,
+                )
                 .build();
+            }
 
             if self.kp_id_changed() {
                 self.on_kp_id_change();

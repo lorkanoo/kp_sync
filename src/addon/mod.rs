@@ -4,8 +4,11 @@ use crate::context::{init_context, Context};
 use crate::thread::background_thread;
 use function_name::named;
 use log::info;
+use nexus::event::event_raise_notification;
+use nexus::event_subscribe;
 use nexus::gui::{register_render, RenderType};
 use nexus::quick_access::add_quick_access_context_menu;
+use std::ffi::CStr;
 use std::fs;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::thread::JoinHandle;
@@ -56,6 +59,19 @@ impl Addon {
 
         migrate_configs(&mut Addon::lock());
         init_context(&mut Addon::lock());
+        unsafe {
+            event_subscribe!("EV_ACCOUNT_NAME" => std::ffi::c_char, |name| {
+                if let Some(name) = name {
+                    let ptr = std::ptr::addr_of!(*name).cast_mut();
+                    let account_name_c = unsafe { CStr::from_ptr(ptr) };
+                    let account_name = account_name_c.to_string_lossy().to_string().replace(":", "");
+                    info!("[EV_ACCOUNT_NAME] Received account name: {:?}", account_name);
+                    Addon::lock().context.arcdps_account_name = account_name;
+                }
+            })
+        }.revert_on_unload();
+
+        event_raise_notification("EV_REQUEST_ACCOUNT_NAME");
         fetch_map_names_thread();
         background_thread();
 

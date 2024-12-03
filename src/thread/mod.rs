@@ -14,9 +14,16 @@ pub fn background_thread() {
         }
 
         clean_finished_threads();
-        refresh_on_load();
-        schedule_on_map_enter();
-        refresh_on_schedule();
+        let use_arcdps = Addon::lock().config.use_arcdps;
+        let account_name = Addon::lock().context.arcdps_account_name.clone();
+        if use_arcdps {
+            Addon::lock().config.kp_identifiers.main_id = account_name.clone();
+        }
+        if !use_arcdps || !account_name.is_empty() {
+            refresh_on_load();
+            schedule_on_map_enter();
+            refresh_on_schedule();
+        }
 
         thread::sleep(Duration::from_millis(500));
     }));

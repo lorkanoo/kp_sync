@@ -6,9 +6,10 @@ Killproof synchronizer for Nexus.
 - Extend scheduled refresh on specific maps to reduce refresh frequency (customizable map list),
 - Reattempt refresh on schedule if refresh failed due to KP refresh rate limit,
 - Reattempt refresh on Guild Wars 2 start if game was closed before scheduled refresh succeeded,
-- Linked account support
+- Linked account support,
 - Notification options,
-- Quick access menu (access by right-clicking nexus icon)
+- Quick access menu (access by right-clicking nexus icon),
+- Automatic Account name detection (Arcdps required)
 
 ## Installation
 1. Install the [Nexus](https://github.com/RaidcoreGG/Nexus) addon manager ([website](https://raidcore.gg/Nexus)).
