@@ -30,7 +30,7 @@ fn refresh_on_load() {
         if addon.config.refresh_on_next_load && current_map_id != &0 {
             info!("[{}] refreshing / scheduling refresh", function_name!());
             if (addon.config.kp_map_ids.contains(current_map_id)
-                || addon.config.retain_refresh_map_ids.contains(current_map_id)) 
+                || addon.config.retain_refresh_map_ids.contains(current_map_id))
                 && addon.config.scheduling_on_map_enter_enabled
             {
                 addon.context.scheduled_refresh = Some(ScheduledRefresh::OnNormalMapEnter);
@@ -78,7 +78,7 @@ fn refresh_on_schedule() {
 fn schedule_on_map_enter() {
     let mut addon = Addon::lock();
     if !addon.config.scheduling_on_map_enter_enabled {
-        return
+        return;
     }
     match addon.context.mumble {
         Some(m) => {

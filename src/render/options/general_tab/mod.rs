@@ -3,39 +3,59 @@ use crate::api::kp::kp_response::KpResponse;
 use crate::api::kp::linked_ids::fetch_linked_ids_thread;
 use crate::api::kp::refresh::refresh_kp_thread;
 use crate::render::options::ERROR_COLOR;
-use crate::render::{scheduled_refresh_text, separate_with_spacing, table_rows};
-use nexus::imgui::Ui;
+use crate::render::{scheduled_refresh_text, table_rows};
+use nexus::imgui::{TreeNodeFlags, Ui};
 
 impl Addon {
     pub fn render_general_tab(&mut self, ui: &Ui) {
         self.render_status_table(ui);
-        separate_with_spacing(ui);
-        ui.text("Configuration");
-        ui.spacing();
-        ui.input_text(
-            "Kill proof id / account name",
-            &mut self.config.kp_identifiers.main_id,
-        )
-        .build();
+        ui.new_line();
+        let mut state_is_valid = false;
+        if ui.collapsing_header(
+            "Configuration##kp",
+            TreeNodeFlags::SPAN_AVAIL_WIDTH | TreeNodeFlags::DEFAULT_OPEN,
+        ) {
+            ui.spacing();
+            ui.input_text(
+                "Kill proof id / account name",
+                &mut self.config.kp_identifiers.main_id,
+            )
+                .build();
 
-        if self.kp_id_changed() {
-            self.on_kp_id_change();
-            self.context.ui.previous_main_id = self.config.kp_identifiers.main_id.clone();
+            if self.kp_id_changed() {
+                self.on_kp_id_change();
+                self.context.ui.previous_main_id = self.config.kp_identifiers.main_id.clone();
+            }
+
+            if self.config.valid() {
+                if self.context.valid(&self.config.kp_identifiers.main_id) {
+                    state_is_valid = true;
+                    if ui.button("Refresh") {
+                        refresh_kp_thread();
+                    }
+                }
+            } else if let KpResponse::InvalidId(invalid_id) = &self.context.main_kp_response {
+                if invalid_id.eq(&self.config.kp_identifiers.main_id) {
+                    ui.text_colored(ERROR_COLOR, "KP Id not found. Enter different value.");
+                }
+            } else {
+                ui.text_colored(
+                    ERROR_COLOR,
+                    "Enter a valid id, for example: \"xAd8\" or \"jennah.1234\" ",
+                );
+            }
+            ui.new_line();
         }
 
-        if self.config.valid() {
-            if self.context.valid(&self.config.kp_identifiers.main_id) {
-                self.render_on_valid_state(ui);
+        if ui.collapsing_header(
+            "Linked accounts##kp",
+            TreeNodeFlags::SPAN_AVAIL_WIDTH | TreeNodeFlags::DEFAULT_OPEN,
+        ) {
+            if state_is_valid {
+                self.render_linked_accounts(ui);
+            } else {
+                ui.text_disabled("Enter valid Kill proof id to see linked accounts options.")
             }
-        } else if let KpResponse::InvalidId(invalid_id) = &self.context.main_kp_response {
-            if invalid_id.eq(&self.config.kp_identifiers.main_id) {
-                ui.text_colored(ERROR_COLOR, "KP Id not found. Enter different value.");
-            }
-        } else {
-            ui.text_colored(
-                ERROR_COLOR,
-                "Enter a valid id, for example: \"xAd8\" or \"jennah.1234\" ",
-            );
         }
     }
 
@@ -51,14 +71,8 @@ impl Addon {
         self.context.linked_kp_responses.clear();
     }
 
-    fn render_on_valid_state(&mut self, ui: &Ui) {
-        if ui.button("Refresh") {
-            refresh_kp_thread();
-        }
+    fn render_linked_accounts(&mut self, ui: &Ui) {
         let mut checkbox_checked = self.config.kp_identifiers.linked_ids.is_some();
-        separate_with_spacing(ui);
-        ui.text("Linked accounts");
-        ui.spacing();
         ui.checkbox("Refresh linked accounts", &mut checkbox_checked);
 
         if checkbox_checked {

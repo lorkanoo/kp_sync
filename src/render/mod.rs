@@ -5,12 +5,6 @@ use nexus::imgui::Ui;
 pub mod options;
 mod quick_access;
 
-fn separate_with_spacing(ui: &Ui) {
-    ui.spacing();
-    ui.separator();
-    ui.spacing();
-}
-
 trait Renderable {
     fn render(&mut self, ui: &Ui);
 }
