@@ -4,12 +4,13 @@ use crate::context::{init_context, Context};
 use crate::thread::background_thread;
 use function_name::named;
 use log::info;
-use nexus::data_link::rtapi::read_rtapi_owned;
+use nexus::data_link::rtapi::read_rtapi;
 use nexus::event::event_raise_notification;
 use nexus::event_subscribe;
 use nexus::gui::{register_render, RenderType};
 use nexus::quick_access::add_quick_access_context_menu;
-use nexus::rtapi::raw::RTAPI_SIG;
+use nexus::rtapi::data::RealTimeData;
+use nexus::rtapi::PlayerData;
 use std::ffi::CStr;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::thread::JoinHandle;
@@ -81,25 +82,18 @@ impl Addon {
         unsafe {
             event_subscribe!("EV_ADDON_LOADED" => i32, |signature| {
             if signature
-                    .filter(|s| **s ==  RTAPI_SIG).is_some() { Addon::threads().push(thread::spawn(|| {
+                    .filter(|s| **s ==  RealTimeData::SIG).is_some() { Addon::threads().push(thread::spawn(|| {
                             sleep(Duration::from_secs(RTAPI_INIT_DELAY_S));
                             let mut addon = Addon::lock();
-                            addon.context.rtapi = read_rtapi_owned();
-                            if let Some(rtapi) = &addon.context.rtapi {
-                                addon.context.detected_account_name = rtapi.player.account_name.clone();
+                            let rtapi = read_rtapi();
+                            if let Some(rtapi) = &rtapi {
+                                let player_data = unsafe { PlayerData::read(rtapi) };
+                                addon.context.detected_account_name = player_data.account_name.clone();
                                 info!("RTAPI detected account name: {}", addon.context.detected_account_name);
                             }
                         })) }
             })
         }.revert_on_unload();
-
-        unsafe {
-            event_subscribe!("EV_ADDON_UNLOADED" => i32, |signature| {
-                if signature
-                    .filter(|s| **s ==  RTAPI_SIG).is_some() { Addon::lock().context.rtapi = None; }
-            })
-        }
-        .revert_on_unload();
 
         fetch_map_names_thread();
         background_thread();
