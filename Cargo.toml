@@ -1,6 +1,6 @@
 [package]
 name = "kp_sync"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["lorkanoo"]
 edition = "2021"
 description = "Kill proof synchronizer"
@@ -12,15 +12,11 @@ log = { version = "0.4.22", features = ["release_max_level_info", "max_level_deb
 reqwest = { version = "0.12.8", features = ["blocking", "rustls-tls", "json"] }
 serde = { version = "1.0.163", features = ["derive"] }
 serde_json = "1.0.132"
-windows = { version = "0.58.0", features = [
-    "Win32_Media",
-] }
 regex = "1.11.1"
 function_name = "0.3.0"
-nexus = { git = "https://github.com/zerthox/nexus-rs", features = ["log", "mumble_json"] }
+nexus = { git = "https://github.com/zerthox/nexus-rs", features = ["log", "mumble_json", "rtapi"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 select = "0.6.0"
-open = "5.3.1"
 semver = "1.0.23"
 
 [build-dependencies]

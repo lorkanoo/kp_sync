@@ -1,7 +1,8 @@
 use crate::addon::Addon;
 use crate::api::get_sync;
 use function_name::named;
-use log::{debug, warn};
+use log::info;
+use log::warn;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::thread;
@@ -21,7 +22,7 @@ fn map_names_path() -> String {
 #[named]
 pub fn fetch_map_names_thread() {
     Addon::threads().push(thread::spawn(|| {
-        debug!("[{}] started", function_name!());
+        info!("[{}] started", function_name!());
         match get_sync(map_names_path()) {
             Ok(response) => match response.json() {
                 Ok(json) => {
@@ -36,5 +37,6 @@ pub fn fetch_map_names_thread() {
             },
             Err(_) => warn!("[{}] could not fetch map names", function_name!()),
         }
+        info!("[{}] ended", function_name!());
     }));
 }

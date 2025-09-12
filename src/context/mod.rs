@@ -7,6 +7,7 @@ use crate::context::scheduled_refresh::ScheduledRefresh;
 use crate::context::ui::UiContext;
 use nexus::data_link::get_mumble_link;
 use nexus::data_link::mumble::MumblePtr;
+use nexus::rtapi::RealTimeData;
 use std::sync::MutexGuard;
 
 #[derive(Debug, Clone)]
@@ -19,7 +20,8 @@ pub struct Context {
     pub run_background_thread: bool,
     pub refresh_in_progress: bool,
     pub ui: UiContext,
-    pub arcdps_account_name: String,
+    pub detected_account_name: String,
+    pub rtapi: Option<RealTimeData>,
 }
 
 impl Default for Context {
@@ -28,12 +30,13 @@ impl Default for Context {
             main_kp_response: KpResponse::Unavailable,
             linked_kp_responses: vec![],
             mumble: get_mumble_link(),
+            rtapi: None,
             on_kp_map: false,
             scheduled_refresh: None,
             run_background_thread: true,
             refresh_in_progress: false,
             ui: Default::default(),
-            arcdps_account_name: "".to_string(),
+            detected_account_name: "".to_string(),
         }
     }
 }

@@ -4,7 +4,7 @@ use crate::api::kp::kp_response::KpResponse;
 use crate::api::kp::refresh::request::refresh_kp_request;
 use crate::api::{get_sync, print_error_chain};
 use ::function_name::named;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use nexus::alert::send_alert;
 use select::document::Document;
 use select::predicate::{Class, Name};
@@ -13,7 +13,7 @@ use std::thread;
 #[named]
 pub fn fetch_linked_ids_thread() {
     Addon::threads().push(thread::spawn(|| {
-        debug!("[{}] started", function_name!());
+        info!("[{}] started", function_name!());
         if !Addon::lock().config.valid() {
             warn!("[{}] addon configuration is not valid", function_name!());
             return;
@@ -27,6 +27,7 @@ pub fn fetch_linked_ids_thread() {
         } else {
             addon.config.kp_identifiers.linked_ids = Some(ids);
         }
+        info!("[{}] ended", function_name!());
     }));
 }
 

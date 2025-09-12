@@ -31,10 +31,11 @@ pub struct Config {
     pub notifications: Notifications,
     #[serde(default = "yes")]
     pub scheduling_on_map_enter_enabled: bool,
-    pub use_arcdps: bool,
+    #[serde(alias = "use_arcdps")]
+    pub autodetect_account_name: bool,
 }
 
-const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9]+\.[0-9]{4})$";
+const REGEX_KP_ID: &str = r"^([a-zA-Z0-9]{3,17}|[a-zA-Z0-9 ]+\.[0-9]{4})$";
 
 impl Default for Config {
     fn default() -> Self {
@@ -47,7 +48,7 @@ impl Default for Config {
             retain_refresh_map_ids: default_retain_refresh_map_ids(),
             notifications: Notifications::default(),
             scheduling_on_map_enter_enabled: yes(),
-            use_arcdps: false,
+            autodetect_account_name: false,
         }
     }
 }

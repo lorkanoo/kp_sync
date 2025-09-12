@@ -19,16 +19,16 @@ impl Addon {
         ) {
             ui.spacing();
             if ui.checkbox(
-                "Autodetect account name (requires arcdps installed)",
-                &mut self.config.use_arcdps,
+                "Autodetect account name (requires RealtimeAPI / ArcDPS installed)",
+                &mut self.config.autodetect_account_name,
             ) {
                 self.context.scheduled_refresh = None;
             }
             ui.spacing();
-            if self.config.use_arcdps {
+            if self.config.autodetect_account_name {
                 ui.text_disabled(format!(
                     "Account name: {}",
-                    self.context.arcdps_account_name
+                    self.context.detected_account_name
                 ));
                 ui.spacing();
             } else {

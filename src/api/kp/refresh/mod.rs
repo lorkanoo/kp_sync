@@ -32,7 +32,7 @@ fn cant_start_refresh() -> bool {
 #[named]
 pub fn refresh_kp_thread() {
     Addon::threads().push(thread::spawn(|| {
-        debug!("[{}] started", function_name!());
+        info!("[{}] started", function_name!());
         if cant_start_refresh() {
             return;
         }
@@ -54,8 +54,8 @@ pub fn refresh_kp_thread() {
             }
             Addon::lock().context.linked_kp_responses = kp_responses;
         }
-        info!("[{}] refresh status updated", function_name!());
         Addon::lock().context.refresh_in_progress = false;
+        info!("[{}] refresh status updated", function_name!());
     }));
 }
 fn handle_main_kp_response(main_kp_response: KpResponse) {

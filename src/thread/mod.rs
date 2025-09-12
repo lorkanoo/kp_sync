@@ -10,16 +10,18 @@ use std::time::Duration;
 pub fn background_thread() {
     Addon::threads().push(thread::spawn(|| loop {
         if !Addon::lock().context.run_background_thread {
+            info!("Stopping background thread");
             break;
         }
 
         clean_finished_threads();
-        let use_arcdps = Addon::lock().config.use_arcdps;
-        let account_name = Addon::lock().context.arcdps_account_name.clone();
-        if use_arcdps {
+
+        let autodetect_account_name = Addon::lock().config.autodetect_account_name;
+        let account_name = Addon::lock().context.detected_account_name.clone();
+        if autodetect_account_name {
             Addon::lock().config.kp_identifiers.main_id = account_name.clone();
         }
-        if !use_arcdps || !account_name.is_empty() {
+        if !autodetect_account_name || !account_name.is_empty() {
             refresh_on_load();
             schedule_on_map_enter();
             refresh_on_schedule();
