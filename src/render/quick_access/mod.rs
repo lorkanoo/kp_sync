@@ -2,6 +2,7 @@ use crate::addon::Addon;
 use crate::api::kp::refresh::refresh_kp_thread;
 use crate::render::scheduled_refresh_text;
 use nexus::imgui::Ui;
+use crate::thread::copy_kp_id_to_clipboard;
 
 impl Addon {
     pub fn render_quick_access(&mut self, ui: &Ui) {
@@ -13,6 +14,10 @@ impl Addon {
         if self.config.valid() && self.context.valid(&self.config.kp_identifiers.main_id) {
             if ui.button(" Refresh ") {
                 refresh_kp_thread();
+            }
+            ui.same_line();
+            if ui.button(" Copy KP ID ") {
+                copy_kp_id_to_clipboard()
             }
         } else {
             ui.text_disabled("Refresh (configuration is not valid)");
