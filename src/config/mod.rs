@@ -121,6 +121,11 @@ pub fn migrate_configs(addon: &mut MutexGuard<Addon>) {
     {
         addon.config.kp_map_ids.push(1564);
     }
+    if version_older_than(addon.config.version.as_str(), "1.3.1")
+        && !addon.config.kp_map_ids.contains(&1609)
+    {
+        addon.config.kp_map_ids.push(1609);
+    }
     addon.config.version = VERSION.to_string();
 }
 

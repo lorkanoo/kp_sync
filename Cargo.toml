@@ -1,6 +1,6 @@
 [package]
 name = "kp_sync"
-version = "1.3.0"
+version = "1.3.1"
 authors = ["lorkanoo"]
 edition = "2021"
 description = "Kill proof synchronizer"
