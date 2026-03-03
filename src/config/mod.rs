@@ -73,7 +73,6 @@ impl Config {
             Ok(file) => {
                 let writer = BufWriter::new(file);
                 serde_json::to_writer_pretty(writer, &self).expect("failed to serialize config");
-                info!("Saved config to \"{}\"", path.display())
             }
             Err(err) => log::error!("Failed to save config: {err}"),
         }
