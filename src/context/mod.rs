@@ -13,6 +13,7 @@ use chrono::{DateTime, Local};
 use nexus::data_link::rtapi::read_rtapi;
 use crate::context::clipboard::CustomClipboard;
 use nexus::rtapi::data::RealTimeData;
+use crate::config::Config;
 
 #[derive(Debug, Clone)]
 pub struct Context {
@@ -30,6 +31,7 @@ pub struct Context {
     pub last_config_save_date: DateTime<Local>,
     pub last_refresh_daemon_tick_date: DateTime<Local>,
     pub first_map_tick: bool,
+    pub saved_config: Option<Config>
 }
 
 impl Default for Context {
@@ -49,6 +51,7 @@ impl Default for Context {
             last_config_save_date: Local::now(),
             last_refresh_daemon_tick_date: Local::now(),
             first_map_tick: true,
+            saved_config: None
         }
     }
 }

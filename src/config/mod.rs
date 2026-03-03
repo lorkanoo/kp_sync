@@ -15,7 +15,7 @@ use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 use std::sync::MutexGuard;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Config {
     #[serde(default = "default_version")]
     pub version: String,

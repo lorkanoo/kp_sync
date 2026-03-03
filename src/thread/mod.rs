@@ -31,7 +31,12 @@ pub fn background_thread() {
             if addon.context.scheduled_refresh.is_some() {
                 addon.config.refresh_on_next_load = true;
             }
-            addon.config.save();
+
+            if addon.context.saved_config.as_ref() != Some(&addon.config) {
+                addon.config.save();
+                addon.context.saved_config = Some(addon.config.clone());
+            }
+
             addon.context.last_config_save_date = now;
         }
 
